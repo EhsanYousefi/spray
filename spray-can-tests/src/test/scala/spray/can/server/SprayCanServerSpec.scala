@@ -16,25 +16,26 @@
 
 package spray.can.server
 
+import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
-import java.io.{ InputStreamReader, BufferedReader, OutputStreamWriter, BufferedWriter }
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-import org.specs2.mutable.Specification
-import org.specs2.time.NoTimeConversions
-import akka.actor.{ Terminated, ActorRef, ActorSystem }
+
+import akka.actor.{ ActorRef, ActorSystem, Terminated }
 import akka.io.IO
 import akka.testkit.TestProbe
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.specs2.mutable.Specification
+import org.specs2.time.NoTimeConversions
 import spray.can.Http
-import spray.util._
-import spray.util.Utils.temporaryServerHostnameAndPort
-import spray.httpx.RequestBuilding._
-import spray.http._
-import HttpProtocols._
 import spray.can.Http.RegisterChunkHandler
 import spray.can.client.ClientConnectionSettings
-import spray.io.CommandWrapper
+import spray.http.HttpProtocols._
+import spray.http._
+import spray.httpx.RequestBuilding._
+import spray.util.Utils.temporaryServerHostnameAndPort
+import spray.util._
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
 
 class SprayCanServerSpec extends Specification with NoTimeConversions {
   val testConf: Config = ConfigFactory.parseString("""
@@ -54,8 +55,9 @@ class SprayCanServerSpec extends Specification with NoTimeConversions {
     "properly bind and unbind an HttpListener" in new TestSetup {
       val commander = TestProbe()
       commander.send(listener, Http.Unbind)
-      commander expectMsg Http.Unbound
+      commander.expectMsg[Http.Unbound](Http.Unbound)
     }
+
     "properly bind and unbind an HttpListener with graceperiod" in new TestSetup {
       val commander = TestProbe()
       val clientTerminationWatcher = TestProbe()
@@ -72,7 +74,7 @@ class SprayCanServerSpec extends Specification with NoTimeConversions {
       clientTerminationWatcher.watch(connection)
       serverTerminationWatcher.watch(listener)
       commander.send(listener, Http.Unbind(10.minutes))
-      commander expectMsg Http.Unbound
+      commander.expectMsg[Http.Unbound](Http.Unbound)
       commander.expectNoMsg()
       clientTerminationWatcher.expectNoMsg()
       serverTerminationWatcher.expectNoMsg()
